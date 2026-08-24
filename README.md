@@ -34,9 +34,9 @@ flowchart LR
 
 | 发布平台 | 文案适配 | 实时/平台证据入口 | 完整发布前审核 |
 |---|---|---|---|
-| 抖音 | 口播、标题、简介、标签 | 天行抖音热榜；网页背景核验 | 玉文支持 |
+| 抖音 | 口播、标题、简介、标签 | 天聚数行（TianAPI）抖音热榜；网页背景核验 | 玉文支持 |
 | 小红书 | 标题、正文、标签、封面短句 | Agent Reach；通常需要用户已有登录态 | 玉文支持 |
-| 微博 | 短帖、话题、讨论引导 | 天行微博热榜 | 暂不支持，明确标记 |
+| 微博 | 短帖、话题、讨论引导 | 天聚数行（TianAPI）微博热榜 | 暂不支持，明确标记 |
 | 微信视频号 | 口播、标题、简介、封面文案 | 用户材料、网页或其他已验证来源 | 玉文支持 |
 
 B站、YouTube、V2EX、GitHub、RSS 等可以作为补充证据来源，但 v0.1.0 不宣称完整覆盖所有发布平台，也不保证推荐量或过审。
@@ -46,7 +46,7 @@ B站、YouTube、V2EX、GitHub、RSS 等可以作为补充证据来源，但 v0.
 ### 必需条件
 
 - 能加载 Agent Skills 的 Codex 或兼容宿主。
-- Python 3.10+，用于来源检查、天行采集和仓库测试。
+- Python 3.10+，用于来源检查、天聚数行（TianAPI）采集和仓库测试。
 
 克隆后，把整个目录复制到宿主的 Skills 目录：
 
@@ -66,14 +66,20 @@ cp -R trend-to-script-cn ~/.codex/skills/trend-to-script-cn
 
 | 能力 | 是否必须 | 配置 | 缺失时 |
 |---|---|---|---|
-| 天行数据 | 可选 | 设置 `TIANAPI_KEY` | 不生成抖音/微博实时榜单，改用已验证材料或常青选题 |
+| 天聚数行（TianAPI） | 可选 | 设置 `TIANAPI_KEY` | 不生成抖音/微博实时榜单，改用已验证材料或常青选题 |
 | Agent Reach | 可选 | 按上游安装；部分平台需要登录态 | 跳过对应平台内搜索并记录覆盖缺口 |
 | Humanizer-zh | 可选；`naturalness=required` 时必须 | 安装外部 Skill | `auto` 交付未自然化草稿；`required` 停止正式稿 |
 | yuwen-publish-precheck | 可选；`publish_precheck=required` 时必须 | 安装外部 Skill | `auto` 标记未完成正式审核；`required` 停止最终稿 |
 
 外部项目与许可说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-### 天行 API
+### 天聚数行（TianAPI） API
+
+本 Skill 可选使用天聚数行提供的实时热榜 API。使用者需自行注册并申请凭据。
+
+官网：[天聚数行 API 平台](https://www.tianapi.com/)
+
+本项目与天聚数行不存在赞助、背书或官方合作关系；使用时请遵守其服务条款、接口限额和数据使用规定。
 
 ```powershell
 $env:TIANAPI_KEY="your_key_here"
@@ -84,7 +90,7 @@ python scripts/tianapi_hotsearch.py --check-config
 
 ### 无 API 的降级路径
 
-没有天行 Key 时仍可使用本 Skill：
+没有 TianAPI Key 时仍可使用本 Skill：
 
 1. 使用用户提供的素材、公开 URL 或可用的 Agent Reach 后端。
 2. 有网页证据时只写“近期相关话题”，不声称进入平台热榜。
@@ -189,4 +195,4 @@ trend-to-script-cn/
 - 不把心理机制描述成“必火”或确定性流量因果。
 - 不把词面扫描零命中写成完整审核通过。
 
-本项目原创部分使用 [MIT License](LICENSE)。Agent Reach、Humanizer-zh、yuwen-publish-precheck 和天行数据保留各自许可证、服务条款与数据限制。
+本项目原创部分使用 [MIT License](LICENSE)。Agent Reach、Humanizer-zh、yuwen-publish-precheck 和天聚数行（TianAPI）保留各自许可证、服务条款与数据限制。

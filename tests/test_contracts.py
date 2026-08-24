@@ -92,7 +92,7 @@ class ContractFixtureTests(unittest.TestCase):
         self.assertEqual((ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.1.0")
         self.assertTrue((ROOT / "LICENSE").is_file())
         notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
-        for dependency in ("Agent Reach", "Humanizer-zh", "yuwen-publish-precheck", "天行数据"):
+        for dependency in ("Agent Reach", "Humanizer-zh", "yuwen-publish-precheck", "天聚数行（TianAPI）"):
             with self.subTest(dependency=dependency):
                 self.assertIn(dependency, notices)
 
