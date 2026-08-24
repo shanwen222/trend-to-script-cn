@@ -1,0 +1,7 @@
+interface:
+  display_name: "热点到成稿"
+  short_description: "把实时热点转成可追溯、可长尾、经审核的平台文案"
+  default_prompt: "Use $trend-to-script-cn to turn current topics into source-traceable, platform-adapted copy for my industry."
+
+policy:
+  allow_implicit_invocation: true

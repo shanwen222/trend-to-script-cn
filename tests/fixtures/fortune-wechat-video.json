@@ -1,0 +1,30 @@
+{
+  "id": "fortune-wechat-video",
+  "request": {
+    "industry": "命理",
+    "platforms": ["微信视频号"],
+    "word_count": {"min": 500, "max": 650},
+    "content_goal": "文化解释和互动",
+    "freshness": "evergreen",
+    "naturalness": "auto",
+    "publish_precheck": "required",
+    "commercial": false
+  },
+  "expected_invariants": {
+    "preferred_sources": ["user_material", "web:fact-check"],
+    "requires_source_coverage": true,
+    "requires_fact_lock": true,
+    "requires_actual_char_count": true,
+    "requires_first_3s_hook": true,
+    "requires_quality_review": true,
+    "requires_naturalness_status": true,
+    "requires_publish_precheck": true,
+    "publish_precheck_platform_supported": true,
+    "risk_routes": [],
+    "forbidden_claim_types": [
+      "预测生死或疾病",
+      "保证财运或投资收益",
+      "使用恐惧推动咨询或转化"
+    ]
+  }
+}

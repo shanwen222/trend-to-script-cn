@@ -1,0 +1,30 @@
+{
+  "id": "maternal-douyin",
+  "request": {
+    "industry": "母婴",
+    "platforms": ["抖音"],
+    "word_count": {"min": 500, "max": 650},
+    "content_goal": "知识解释和账号信任",
+    "freshness": "today",
+    "naturalness": "auto",
+    "publish_precheck": "required",
+    "commercial": false
+  },
+  "expected_invariants": {
+    "preferred_sources": ["tianapi:douyin", "web:fact-check"],
+    "requires_source_coverage": true,
+    "requires_fact_lock": true,
+    "requires_actual_char_count": true,
+    "requires_first_3s_hook": true,
+    "requires_quality_review": true,
+    "requires_naturalness_status": true,
+    "requires_publish_precheck": true,
+    "publish_precheck_platform_supported": true,
+    "risk_routes": ["medical_if_health_claims"],
+    "forbidden_claim_types": [
+      "未经证实的疾病诊断",
+      "保证治疗或发育结果",
+      "把一般健康信息包装为个体医疗建议"
+    ]
+  }
+}

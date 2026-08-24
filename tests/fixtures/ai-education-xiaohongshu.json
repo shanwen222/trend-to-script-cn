@@ -1,0 +1,30 @@
+{
+  "id": "ai-education-xiaohongshu",
+  "request": {
+    "industry": "AI教育",
+    "platforms": ["小红书"],
+    "word_count": {"min": 700, "max": 900},
+    "content_goal": "收藏和讨论",
+    "freshness": "last_7_days",
+    "naturalness": "required",
+    "publish_precheck": "required",
+    "commercial": "unknown"
+  },
+  "expected_invariants": {
+    "preferred_sources": ["agent-reach:xiaohongshu", "web:fact-check"],
+    "requires_source_coverage": true,
+    "requires_fact_lock": true,
+    "requires_actual_char_count": true,
+    "requires_first_3s_hook": false,
+    "requires_quality_review": true,
+    "requires_naturalness_status": true,
+    "requires_publish_precheck": true,
+    "publish_precheck_platform_supported": true,
+    "risk_routes": [],
+    "forbidden_claim_types": [
+      "把网页搜索结果写成小红书平台热度",
+      "虚构学习效果或用户案例",
+      "未披露的商业导流"
+    ]
+  }
+}
