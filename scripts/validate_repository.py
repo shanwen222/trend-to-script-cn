@@ -18,7 +18,10 @@ REQUIRED = (
     "THIRD_PARTY_NOTICES.md",
     "agents/openai.yaml",
     "scripts/check_sources.py",
+    "scripts/bootstrap_dependencies.py",
     "scripts/tianapi_hotsearch.py",
+    "references/dependencies.json",
+    "references/dependency-bootstrap.md",
 )
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yaml", ".yml", ".txt", ""}
 SECRET_ASSIGNMENT = re.compile(
@@ -82,6 +85,26 @@ def check_fixtures(errors: list[str]) -> None:
                 fail(errors, f"{path.relative_to(ROOT)} missing key: {key}")
 
 
+def check_dependency_manifest(errors: list[str]) -> None:
+    path = ROOT / "references" / "dependencies.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(errors, f"invalid dependency manifest: {exc}")
+        return
+    dependencies = payload.get("dependencies")
+    if not isinstance(dependencies, list) or len(dependencies) != 3:
+        fail(errors, "dependency manifest must declare exactly 3 mandatory dependencies")
+        return
+    expected = {"agent-reach", "humanizer-zh", "yuwen-publish-precheck"}
+    actual = {item.get("name") for item in dependencies if isinstance(item, dict)}
+    if actual != expected:
+        fail(errors, f"dependency manifest names mismatch: {sorted(actual)}")
+    for item in dependencies:
+        if not isinstance(item, dict) or not re.fullmatch(r"[0-9a-f]{40}", str(item.get("ref", ""))):
+            fail(errors, "dependency manifest refs must be full commit SHAs")
+
+
 def check_repository_hygiene(errors: list[str]) -> None:
     ignored_dirs = {".git", "__pycache__"}
     for path in ROOT.rglob("*"):
@@ -110,6 +133,7 @@ def main() -> int:
     check_markdown_links(errors)
     check_python(errors)
     check_fixtures(errors)
+    check_dependency_manifest(errors)
     check_repository_hygiene(errors)
     if errors:
         print("Repository validation failed:", file=sys.stderr)

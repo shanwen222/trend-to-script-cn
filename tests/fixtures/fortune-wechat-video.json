@@ -6,7 +6,7 @@
     "word_count": {"min": 500, "max": 650},
     "content_goal": "文化解释和互动",
     "freshness": "evergreen",
-    "naturalness": "auto",
+    "naturalness": "required",
     "publish_precheck": "required",
     "commercial": false
   },

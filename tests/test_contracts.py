@@ -45,8 +45,8 @@ class ContractFixtureTests(unittest.TestCase):
                 self.assertTrue(required.issubset(expected))
                 self.assertTrue(all(expected[name] for name in required))
                 self.assertLess(request["word_count"]["min"], request["word_count"]["max"])
-                self.assertIn(request["naturalness"], {"auto", "required", "off"})
-                self.assertIn(request["publish_precheck"], {"auto", "required", "off"})
+                self.assertIn(request["naturalness"], {"auto", "required"})
+                self.assertIn(request["publish_precheck"], {"auto", "required"})
                 self.assertTrue(expected["preferred_sources"])
                 self.assertTrue(expected["forbidden_claim_types"])
 
@@ -88,8 +88,35 @@ class ContractFixtureTests(unittest.TestCase):
             with self.subTest(link=link):
                 self.assertTrue((ROOT / link).is_file())
 
+    def test_platform_publish_asset_fields_are_documented(self) -> None:
+        contract = (ROOT / "references" / "input-output.md").read_text(encoding="utf-8")
+        platform = (ROOT / "references" / "platform-output.md").read_text(encoding="utf-8")
+        for field in (
+            "cover",
+            "main_title",
+            "subtitle",
+            "video_title_suggestions",
+            "video_description",
+            "topic_title_suggestions",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, contract)
+        self.assertIn("封面主标题建议", platform)
+        self.assertIn("视频简介建议", platform)
+        self.assertIn("话题标题建议", platform)
+
+    def test_mandatory_dependency_gate_is_documented(self) -> None:
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        bootstrap = (ROOT / "scripts" / "bootstrap_dependencies.py").read_text(encoding="utf-8")
+        manifest = (ROOT / "references" / "dependencies.json").read_text(encoding="utf-8")
+        self.assertIn("bootstrap_dependencies.py --ensure --json", skill)
+        self.assertIn("blocked_by_dependencies", skill)
+        self.assertIn("dependencies.json", bootstrap)
+        for dependency in ("agent-reach", "humanizer-zh", "yuwen-publish-precheck"):
+            self.assertIn(dependency, manifest)
+
     def test_public_beta_packaging_is_present(self) -> None:
-        self.assertEqual((ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.1.0")
+        self.assertEqual((ROOT / "VERSION").read_text(encoding="utf-8").strip(), "0.2.0")
         self.assertTrue((ROOT / "LICENSE").is_file())
         notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
         for dependency in ("Agent Reach", "Humanizer-zh", "yuwen-publish-precheck", "天聚数行（TianAPI）"):

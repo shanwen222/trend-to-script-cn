@@ -6,7 +6,7 @@
     "word_count": {"min": 500, "max": 650},
     "content_goal": "知识解释和账号信任",
     "freshness": "today",
-    "naturalness": "auto",
+    "naturalness": "required",
     "publish_precheck": "required",
     "commercial": false
   },

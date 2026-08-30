@@ -148,6 +148,7 @@ def main() -> int:
         },
         "review_engines": {
             "yuwen_publish_precheck": {
+                "required": True,
                 "available": yuwen_precheck is not None,
                 "complete_install": yuwen_precheck is not None,
                 "supported_platforms": ["抖音", "小红书", "微信视频号"],
@@ -155,6 +156,7 @@ def main() -> int:
         },
         "writing_engines": {
             "humanizer_zh": {
+                "required": True,
                 "available": humanizer is not None,
                 "complete_install": bool(
                     humanizer
@@ -169,7 +171,8 @@ def main() -> int:
     if args.show_paths and humanizer:
         output["writing_engines"]["humanizer_zh"]["path"] = str(humanizer)
     print(json.dumps(output, ensure_ascii=False, indent=None if args.compact else 2))
-    return 0 if commands["agent-reach"] or os.environ.get("TIANAPI_KEY") else 1
+    mandatory_ready = bool(commands["agent-reach"] and yuwen_precheck and humanizer)
+    return 0 if mandatory_ready else 1
 
 
 if __name__ == "__main__":

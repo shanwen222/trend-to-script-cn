@@ -10,9 +10,9 @@
 
 ## 模式
 
-- `naturalness=auto`：可用时调用；不可用时标记 `engine_unavailable`，不伪称已处理。
-- `naturalness=required`：不可用则停止交付正式成稿，返回安装检查信息。
-- `naturalness=off`：明确跳过。
+- `naturalness=required`：唯一正式模式。引擎不可用、执行失败或回收检查不通过时，停止交付正式成稿，返回安装检查信息。
+- `naturalness=auto`：旧请求兼容别名，实际仍按 `required` 执行。
+- `naturalness=off`：拒绝，不允许通过参数跳过去 AI 味环节。
 
 ## 回收检查
 

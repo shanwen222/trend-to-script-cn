@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "dependencies": [
+    {
+      "name": "agent-reach",
+      "repo": "Panniantong/Agent-Reach",
+      "ref": "06c202b03400a7d31886bf4399213706da1a0324",
+      "skill_path": "agent_reach/skill",
+      "required_files": [
+        "SKILL.md",
+        "references/search.md",
+        "references/web.md"
+      ],
+      "cli_package": true
+    },
+    {
+      "name": "humanizer-zh",
+      "repo": "op7418/Humanizer-zh",
+      "ref": "91f3d394db8419c20d67ebe22a96cf8fee0a404b",
+      "skill_path": ".",
+      "required_files": [
+        "SKILL.md",
+        "LICENSE"
+      ],
+      "cli_package": false
+    },
+    {
+      "name": "yuwen-publish-precheck",
+      "repo": "yuwen-cool/yuwen-publish-precheck",
+      "ref": "44a7b654283726db153591df73cbafe255685f33",
+      "skill_path": ".",
+      "required_files": [
+        "SKILL.md",
+        "scripts/scan.py",
+        "references/judgment.md"
+      ],
+      "cli_package": false
+    }
+  ]
+}

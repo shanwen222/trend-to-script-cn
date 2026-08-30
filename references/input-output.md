@@ -7,12 +7,15 @@
   "industry": "母婴",
   "platforms": ["抖音", "小红书"],
   "word_count": {"min": 500, "max": 650},
+  "duration": "约 2 分钟",
   "content_goal": "热点借势+情绪共鸣",
   "tone": "自然口播",
+  "audience": "学龄儿童家长",
+  "persona": "亲子内容创作者",
   "strategy_mode": "standard",
   "strategy_strength": "balanced",
-  "naturalness": "auto",
-  "publish_precheck": "auto",
+  "naturalness": "required",
+  "publish_precheck": "required",
   "commercial": "unknown",
   "count": 5,
   "freshness": "today",
@@ -20,7 +23,9 @@
 }
 ```
 
-`platforms`是输出平台，不自动等于来源平台。`word_count`可写整数或`min/max`区间；未指定时根据平台和内容类型选择合理范围并标注假设。`strategy_mode=debug`输出内部决策和评分，`off`跳过策略层。`naturalness=auto`在引擎可用时调用外接 Humanizer，`required`在引擎缺失时停止正式稿交付，`off`明确跳过；任何模式都不能修改事实和风险限定。`publish_precheck=auto`时对审核引擎支持的平台自动执行完整审核；`required`时缺少引擎或平台不受支持就不交付最终稿；`off`只在用户明确要求时跳过。`commercial`未知时不得擅自判成非商业。
+`word_count`可以用整数、区间或视频时长换算；例如“约 2 分钟口播”应转换为合理字数区间，并在输出中报告实际字数。`audience`和`persona`是提高命中率的推荐字段，缺失时可以采用最小假设。母婴内容建议说明孕期、0—3 岁、学龄前或学龄儿童等年龄段。
+
+`platforms`是输出平台，不自动等于来源平台。`word_count`可写整数或`min/max`区间；未指定时根据平台和内容类型选择合理范围并标注假设。`strategy_mode=debug`输出内部决策和评分，`off`跳过策略层。`naturalness=required`和`publish_precheck=required`是本 Skill 的固定质量闸门；旧请求中的 `auto` 只作为兼容别名，实际仍按 `required` 执行，`off`请求被拒绝。任何模式都不能修改事实和风险限定。`commercial`未知时不得擅自判成非商业。
 
 ## 来源记录
 
@@ -99,7 +104,8 @@
       },
       "platform_versions": {
         "抖音": {
-          "title": "视频标题",
+          "title": "视频标题（兼容字段）",
+          "video_title": "视频标题",
           "body": "口播正文",
           "char_count": 600,
           "first_3s_hook": {
@@ -110,8 +116,17 @@
             "payoff_location": "正文第3段",
             "passed": true
           },
+          "cover": {
+            "main_title": "封面主标题",
+            "subtitle": "封面副标题"
+          },
+          "video_title_suggestions": ["视频标题候选1", "视频标题候选2", "视频标题候选3"],
+          "recommended_video_title": "视频标题候选1",
           "tags": ["话题1", "话题2"],
-          "description": "视频简介",
+          "description": "视频简介（兼容字段）",
+          "video_description": "视频简介",
+          "topic_title_suggestions": ["#话题标题1", "#话题标题2", "#话题标题3"],
+          "recommended_topic_title": "#话题标题1",
           "publish_time": "21:00-22:00",
           "naturalness_review": {
             "mode": "auto",
@@ -144,7 +159,7 @@
         "engine_source": "https://github.com/yuwen-cool/yuwen-publish-precheck",
         "platform": "抖音",
         "status": "passed_after_changes",
-        "scope": ["标题", "口播正文", "简介", "标签"],
+        "scope": ["封面主标题", "封面副标题", "视频标题", "口播正文", "视频简介", "话题标题", "标签"],
         "commercial": false,
         "issues": [
           {
@@ -164,5 +179,7 @@
   ]
 }
 ```
+
+`title` 和 `description` 是旧版兼容字段，分别等同于 `video_title` 和 `video_description`；新结果优先使用语义明确的字段。`video_title_suggestions` 和 `topic_title_suggestions` 是候选集合，必须从中标出一个推荐项或说明选择逻辑。封面主标题负责一眼看懂主题，副标题补充具体回报，不把完整口播塞进封面。话题标题是可搜索/可参与的话题词，不等同于随意堆砌的标签。
 
 平台版本可以比通用核心更口语、更短或更适合图文，但不得改变核心事实和来源平台。`strategy_mode=debug`时保留候选钩子、机制、长尾记录、评分和改写理由。审核引擎修复后的版本覆盖审核前候选稿；修复后不得再进行未经复检的文案改写。
