@@ -12,9 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Scan sensitive and personal data before publication checks
+        run: python scripts/check_sensitive.py --pre-push --json
       - name: Validate repository
         run: python scripts/validate_repository.py
       - name: Run regression tests

@@ -201,16 +201,44 @@ python -m unittest discover -s tests -v
 
 GitHub Actions 会在 push 和 pull request 时运行相同检查。测试不要求模型生成固定措辞；真实成稿仍需定期做前向测试。
 
+### 发布 GitHub 前的安全扫描
+
+公开同步前必须先扫描，不能直接执行 `git add .` 或 `git add -A`：
+
+```bash
+python scripts/check_sensitive.py --pre-push --json
+```
+
+扫描器会检查工作区（包括未跟踪文件）和本地 Git 可达历史，覆盖常见密钥、Token、私钥、邮箱、手机号、身份证号、带标签的个人资料、可疑凭据文件名和本机用户路径。命中或无法检查时返回失败，并且不会打印匹配到的敏感内容。确认无误后，只暂存明确文件：
+
+```bash
+git add SKILL.md README.md scripts/check_sensitive.py
+git diff --cached --check
+python scripts/validate_repository.py
+python -m unittest discover -s tests -v
+git push origin main
+```
+
+首次在这个本地仓库启用推送前 Hook：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Hook 会在 `git push` 前再次执行同一安全扫描；GitHub Actions 也会在远端复核。`.gitignore` 不能替代扫描，未跟踪文件也不能用 `git add .` 批量加入。
+
 ## 项目结构
 
 ```text
 trend-to-script-cn/
 ├── .github/workflows/validate.yml
+├── .githooks/pre-push
 ├── agents/openai.yaml
 ├── docs/examples/
 ├── references/
 ├── scripts/
-│   └── bootstrap_dependencies.py
+│   ├── bootstrap_dependencies.py
+│   └── check_sensitive.py
 ├── tests/fixtures/
 ├── LICENSE
 ├── THIRD_PARTY_NOTICES.md

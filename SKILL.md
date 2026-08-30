@@ -54,6 +54,24 @@ python scripts/check_sources.py
 
 该脚本只报告环境变量是否存在、命令可用性和 `agent-reach doctor --json` 状态，不打印密钥、默认不暴露本机路径，也不登录平台。把结果作为本次运行的能力快照，不能把“已安装”推断成“已登录”或“实时可用”。
 
+## GitHub 发布安全闸门
+
+维护或公开同步本 Skill 仓库时，必须先运行：
+
+```bash
+python scripts/check_sensitive.py --pre-push --json
+```
+
+该扫描会检查工作区（包括未跟踪文件）和本地 Git 可达历史中的凭据、Token、私钥、邮箱、手机号、身份证号、带标签的个人资料、可疑凭据文件名和本机用户路径。扫描命中或存在无法检查的文件时返回非零状态，必须停止，不得绕过或把命中内容直接发给远程仓库。扫描器只输出文件位置和规则名，不输出密钥或个人信息原文。
+
+不要使用 `git add .` 或 `git add -A`。先扫描，再只暂存明确要发布的文件，例如 `git add SKILL.md scripts/check_sensitive.py`；随后检查 `git diff --cached --check`，重新运行仓库验证和测试，最后才允许 `git push`。仓库提供了 `.githooks/pre-push`，首次在本地启用：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+本地 Hook 和 GitHub Actions 都会再次执行扫描；GitHub Actions 是远端复核，不能替代推送前的本地扫描。
+
 ## 数据路由
 
 按任务选择来源，不把一种来源冒充另一种：

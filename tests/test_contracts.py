@@ -5,6 +5,8 @@ import re
 import unittest
 from pathlib import Path
 
+from scripts.check_sensitive import scan_text
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -122,6 +124,44 @@ class ContractFixtureTests(unittest.TestCase):
         for dependency in ("Agent Reach", "Humanizer-zh", "yuwen-publish-precheck", "天聚数行（TianAPI）"):
             with self.subTest(dependency=dependency):
                 self.assertIn(dependency, notices)
+
+    def test_publish_security_gate_is_documented_and_wired(self) -> None:
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "validate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("check_sensitive.py --pre-push --json", skill)
+        self.assertIn("不要使用 `git add .`", skill)
+        self.assertIn("check_sensitive.py --pre-push --json", readme)
+        self.assertIn("fetch-depth: 0", workflow)
+        self.assertIn("python scripts/check_sensitive.py --pre-push --json", workflow)
+        self.assertTrue((ROOT / ".githooks" / "pre-push").is_file())
+
+    def test_sensitive_scanner_detects_secrets_and_personal_data_without_echoing_values(self) -> None:
+        github_token = "ghp" + "_" + ("A" * 24)
+        email = "test" + "@" + "example.com"
+        mobile = "138" + "00123456"
+        sample = "token" + "=" + '"' + github_token + '" email=' + email + " phone=" + mobile
+        findings = scan_text(
+            sample,
+            source="test",
+            path="sample.txt",
+        )
+        rules = {finding.rule for finding in findings}
+        self.assertIn("github_token", rules)
+        self.assertIn("email", rules)
+        self.assertIn("mainland_mobile", rules)
+        self.assertTrue(all(github_token not in str(finding) for finding in findings))
+        self.assertTrue(all(email not in str(finding) for finding in findings))
+
+    def test_sensitive_scanner_allows_documented_placeholders(self) -> None:
+        findings = scan_text(
+            'TIANAPI_KEY="your_key_here" TOKEN="placeholder"',
+            source="test",
+            path="example.txt",
+        )
+        self.assertEqual(findings, [])
 
 
 if __name__ == "__main__":
