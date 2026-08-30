@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.check_sensitive import scan_text
+from scripts.check_sensitive import scan_bytes, scan_text
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -135,19 +139,40 @@ class ContractFixtureTests(unittest.TestCase):
         self.assertIn("不要使用 `git add .`", skill)
         self.assertIn("check_sensitive.py --pre-push --json", readme)
         self.assertIn("fetch-depth: 0", workflow)
-        self.assertIn("python scripts/check_sensitive.py --pre-push --json", workflow)
-        self.assertTrue((ROOT / ".githooks" / "pre-push").is_file())
+        self.assertIn("python scripts/check_sensitive.py --history", workflow)
+        self.assertIn("scripts/check_sensitive.py", (ROOT / "hooks" / "pre-push").read_text(encoding="utf-8"))
+        self.assertTrue((ROOT / "scripts" / "install_pre_push_hook.py").is_file())
+
+    def test_clean_worktree_scan_passes(self) -> None:
+        scanner = ROOT / "scripts" / "check_sensitive.py"
+        result = subprocess.run(
+            [sys.executable, str(scanner), "--worktree-only", "--repo", str(ROOT)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_scanner_detects_media_headers_and_mixed_binary_secrets(self) -> None:
+        github_token = b"ghp" + b"_" + (b"A" * 24)
+        findings = scan_bytes(
+            b"\x89PNG\r\n\x1a\n\x00\xff" + github_token,
+            source="worktree",
+            path="portrait.bin",
+            commit="",
+        )
+        rules = {finding.rule for finding in findings}
+        self.assertIn("png_header", rules)
+        self.assertIn("nul_byte_binary", rules)
+        self.assertIn("github_token", rules)
+        self.assertTrue(all(github_token.decode() not in str(finding) for finding in findings))
 
     def test_sensitive_scanner_detects_secrets_and_personal_data_without_echoing_values(self) -> None:
         github_token = "ghp" + "_" + ("A" * 24)
         email = "test" + "@" + "example.com"
         mobile = "138" + "00123456"
         sample = "token" + "=" + '"' + github_token + '" email=' + email + " phone=" + mobile
-        findings = scan_text(
-            sample,
-            source="test",
-            path="sample.txt",
-        )
+        findings = scan_text(sample, source="test", path="sample.txt")
         rules = {finding.rule for finding in findings}
         self.assertIn("github_token", rules)
         self.assertIn("email", rules)
@@ -162,6 +187,100 @@ class ContractFixtureTests(unittest.TestCase):
             path="example.txt",
         )
         self.assertEqual(findings, [])
+
+    def test_deleted_history_media_and_secret_are_detected(self) -> None:
+        scanner = ROOT / "scripts" / "check_sensitive.py"
+        with tempfile.TemporaryDirectory(prefix="trend_scan_") as directory:
+            repo = Path(directory)
+            self._run_git(repo, "init")
+            token = "ghp" + "_" + ("B" * 24)
+            (repo / "portrait.jpg").write_bytes(b"\xff\xd8\xff\x00")
+            (repo / "old_secret.txt").write_text("token=" + token, encoding="utf-8")
+            self._run_git(repo, "add", "portrait.jpg", "old_secret.txt")
+            self._run_git(repo, "commit", "-m", "old materials")
+            first_commit = self._run_git(repo, "rev-parse", "HEAD")
+            (repo / "portrait.jpg").unlink()
+            (repo / "old_secret.txt").unlink()
+            self._run_git(repo, "add", "-u", "portrait.jpg", "old_secret.txt")
+            self._run_git(repo, "commit", "-m", "remove old materials")
+            second_commit = self._run_git(repo, "rev-parse", "HEAD")
+            result = subprocess.run(
+                [sys.executable, str(scanner), "--history", "--repo", str(repo), "--json"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            rules = {item["rule"] for item in payload["findings"]}
+            self.assertIn("jpeg_header", rules)
+            self.assertIn("github_token", rules)
+            self.assertTrue(all(item["commit"] for item in payload["findings"]))
+            self.assertNotIn(token, result.stdout)
+            push_input = f"refs/heads/main {second_commit} refs/heads/main {'0' * 40}\n"
+            pushed = subprocess.run(
+                [sys.executable, str(scanner), "--pre-push", "--repo", str(repo), "--json"],
+                input=push_input,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertNotEqual(pushed.returncode, 0)
+            pushed_payload = json.loads(pushed.stdout)
+            self.assertTrue(any(item["source"] == "pre-push" for item in pushed_payload["findings"]))
+            self.assertIn(first_commit, {item["commit"] for item in pushed_payload["findings"]})
+            self.assertNotIn(token, pushed.stdout)
+
+    def test_install_hook_does_not_overwrite_unknown_hook(self) -> None:
+        installer = ROOT / "scripts" / "install_pre_push_hook.py"
+        with tempfile.TemporaryDirectory(prefix="trend_hook_") as directory:
+            repo = Path(directory)
+            self._run_git(repo, "init")
+            target = repo / ".git" / "hooks" / "pre-push"
+            target.write_text("#!/bin/sh\necho unknown\n", encoding="utf-8")
+            original = target.read_text(encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(installer), "--repo", str(repo)],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(target.read_text(encoding="utf-8"), original)
+            forced = subprocess.run(
+                [sys.executable, str(installer), "--repo", str(repo), "--force"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertEqual(forced.returncode, 0, forced.stdout + forced.stderr)
+            installed = target.read_text(encoding="utf-8")
+            self.assertIn("scripts/check_sensitive.py", installed)
+            self.assertIn("--pre-push", installed)
+
+    @staticmethod
+    def _run_git(repo: Path, *args: str) -> str:
+        environment = os.environ.copy()
+        test_email = "test" + "@" + "example.com"
+        environment.update(
+            {
+                "GIT_AUTHOR_NAME": "Test User",
+                "GIT_AUTHOR_EMAIL": test_email,
+                "GIT_COMMITTER_NAME": "Test User",
+                "GIT_COMMITTER_EMAIL": test_email,
+            }
+        )
+        result = subprocess.run(
+            ["git", *args],
+            cwd=repo,
+            env=environment,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if result.returncode:
+            raise AssertionError(result.stdout + result.stderr)
+        return result.stdout.strip()
 
 
 if __name__ == "__main__":

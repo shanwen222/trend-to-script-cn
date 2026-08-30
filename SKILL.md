@@ -56,21 +56,21 @@ python scripts/check_sources.py
 
 ## GitHub 发布安全闸门
 
-维护或公开同步本 Skill 仓库时，必须先运行：
+维护或公开同步本 Skill 仓库时，必须先运行同一份扫描器：
 
 ```bash
 python scripts/check_sensitive.py --pre-push --json
 ```
 
-该扫描会检查工作区（包括未跟踪文件）和本地 Git 可达历史中的凭据、Token、私钥、邮箱、手机号、身份证号、带标签的个人资料、可疑凭据文件名和本机用户路径。扫描命中或存在无法检查的文件时返回非零状态，必须停止，不得绕过或把命中内容直接发给远程仓库。扫描器只输出文件位置和规则名，不输出密钥或个人信息原文。
+该扫描会检查已跟踪文件、未被忽略的未跟踪文件、推送范围内的提交和全部可达历史，并识别照片/媒体扩展名和 PNG、JPEG、GIF、PDF、ZIP、RIFF、ICO 等文件头、NUL/非 UTF-8 二进制、嵌入式图片或 Base64、超大文件、凭据、Cookie、邮箱、手机号、身份证号和 Windows/macOS/Linux 私有路径。扫描命中时返回非零状态，必须停止，不得绕过或把命中内容直接发给远程仓库。扫描器只输出 `source`、`path`、`rule`、`commit`，不输出匹配原文。
 
-不要使用 `git add .` 或 `git add -A`。先扫描，再只暂存明确要发布的文件，例如 `git add SKILL.md scripts/check_sensitive.py`；随后检查 `git diff --cached --check`，重新运行仓库验证和测试，最后才允许 `git push`。仓库提供了 `.githooks/pre-push`，首次在本地启用：
+不要使用 `git add .` 或 `git add -A`。先扫描，再只暂存明确要发布的文件，例如 `git add SKILL.md scripts/check_sensitive.py`；随后检查 `git diff --cached --check`，重新运行仓库验证和测试，最后才允许 `git push`。仓库提供了 `hooks/pre-push` 模板，维护者首次在当前克隆中安装：
 
 ```bash
-git config core.hooksPath .githooks
+python scripts/install_pre_push_hook.py
 ```
 
-本地 Hook 和 GitHub Actions 都会再次执行扫描；GitHub Actions 是远端复核，不能替代推送前的本地扫描。
+安装脚本默认写入当前项目自己的 `.git/hooks/pre-push`；未知已有 Hook 默认不覆盖，只有显式 `--force` 才覆盖。Hook 会在 `git push` 前调用当前项目的 `scripts/check_sensitive.py --pre-push`。GitHub Actions 使用同一份扫描器执行 `--history`，不能用另一套外部扫描器替代。
 
 ## 数据路由
 

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.check_sensitive import scan_git_history, scan_worktree
+from scripts.check_sensitive import scan_history, scan_worktree
 
 
 REQUIRED = (
@@ -29,7 +29,8 @@ REQUIRED = (
     "scripts/tianapi_hotsearch.py",
     "references/dependencies.json",
     "references/dependency-bootstrap.md",
-    ".githooks/pre-push",
+    "hooks/pre-push",
+    "scripts/install_pre_push_hook.py",
 )
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yaml", ".yml", ".txt", ""}
 SECRET_ASSIGNMENT = re.compile(
@@ -135,17 +136,14 @@ def check_repository_hygiene(errors: list[str]) -> None:
 
 
 def check_sensitive_content(errors: list[str]) -> None:
-    findings, unscanned = scan_worktree(ROOT)
-    history_findings, history_unscanned = scan_git_history(ROOT)
+    findings = scan_worktree(ROOT)
+    history_findings = scan_history(ROOT)
     for item in [*findings, *history_findings]:
-        location = f":{item.line}" if item.line is not None else ""
         fail(
             errors,
-            f"sensitive/privacy scan hit in {item.source}:{item.path}{location} "
-            f"[{item.category}/{item.rule}]",
+            f"sensitive/privacy scan hit in {item.source}:{item.path} "
+            f"[rule={item.rule} commit={item.commit}]",
         )
-    for item in [*unscanned, *history_unscanned]:
-        fail(errors, f"sensitive/privacy scan could not inspect {item.source}:{item.path}: {item.reason}")
 
 
 def main() -> int:

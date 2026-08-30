@@ -209,7 +209,17 @@ GitHub Actions 会在 push 和 pull request 时运行相同检查。测试不要
 python scripts/check_sensitive.py --pre-push --json
 ```
 
-扫描器会检查工作区（包括未跟踪文件）和本地 Git 可达历史，覆盖常见密钥、Token、私钥、邮箱、手机号、身份证号、带标签的个人资料、可疑凭据文件名和本机用户路径。命中或无法检查时返回失败，并且不会打印匹配到的敏感内容。确认无误后，只暂存明确文件：
+扫描器是仓库唯一的发布安全入口，会检查已跟踪文件、未被忽略的未跟踪文件、推送范围内的提交和全部可达 Git 历史。它会识别照片/媒体扩展名和 PNG、JPEG、GIF、PDF、ZIP、RIFF、ICO 等文件头、NUL/非 UTF-8 二进制、嵌入式图片或 Base64、超大文件、常见密钥、Cookie、邮箱、手机号、身份证号和本机私有路径。命中时只输出 `source`、`path`、`rule`、`commit`，不输出敏感原文，并以非零状态阻止后续流程。
+
+维护者首次在当前克隆中安装推送前 Hook：
+
+```bash
+python scripts/install_pre_push_hook.py
+```
+
+安装脚本默认写入当前项目自己的 `.git/hooks/pre-push`，未知已有 Hook 默认不覆盖，只有显式 `--force` 才覆盖。Hook 和 GitHub Actions 都调用仓库内同一份扫描器；Actions 使用完整历史执行 `--history`。`.gitignore` 不能替代扫描，未跟踪文件也不能用 `git add .` 批量加入。
+
+确认扫描通过后，只暂存明确文件：
 
 ```bash
 git add SKILL.md README.md scripts/check_sensitive.py
@@ -219,26 +229,19 @@ python -m unittest discover -s tests -v
 git push origin main
 ```
 
-首次在这个本地仓库启用推送前 Hook：
-
-```bash
-git config core.hooksPath .githooks
-```
-
-Hook 会在 `git push` 前再次执行同一安全扫描；GitHub Actions 也会在远端复核。`.gitignore` 不能替代扫描，未跟踪文件也不能用 `git add .` 批量加入。
-
 ## 项目结构
 
 ```text
 trend-to-script-cn/
 ├── .github/workflows/validate.yml
-├── .githooks/pre-push
+├── hooks/pre-push
 ├── agents/openai.yaml
 ├── docs/examples/
 ├── references/
 ├── scripts/
 │   ├── bootstrap_dependencies.py
-│   └── check_sensitive.py
+│   ├── check_sensitive.py
+│   └── install_pre_push_hook.py
 ├── tests/fixtures/
 ├── LICENSE
 ├── THIRD_PARTY_NOTICES.md
